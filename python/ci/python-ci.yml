@@ -1,0 +1,44 @@
+# GitHub Actions workflow for the Python package.
+# To activate: move this file to <repo root>/.github/workflows/python-ci.yml
+# (it is kept here so that everything for the package lives under python/).
+name: python-ci
+
+on:
+  push:
+    paths: ["python/**"]
+  pull_request:
+    paths: ["python/**"]
+
+defaults:
+  run:
+    working-directory: python
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy
+      - run: pytest
+      - name: CLI smoke test
+        run: itrialspace-eval analyze tests/fixtures/lesions_sample.csv --patients tests/fixtures/patients_sample.csv --bootstrap 500 --seed 42 --out report.json
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t itrialspace-eval .
+      - run: docker run --rm -v "$PWD/tests/fixtures:/data:ro" itrialspace-eval analyze /data/lesions_sample.csv --patients /data/patients_sample.csv --seed 42

@@ -1,0 +1,8 @@
+model,cpm
+retinanet-r50,0.712
+faster-rcnn-r101,0.758
+nnDetection,0.842
+yolo-lung-v2,0.655
+monai-retina3d,0.801
+cpm-net,0.779
+deeplung,0.694
